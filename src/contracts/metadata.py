@@ -29,4 +29,4 @@ class ArtifactMetadata(BaseContract):
     schema_version: SemVer = "1.0.0"
     confidence: Confidence | None = None
     evidence_count: int = Field(default=0, ge=0)
-    tags: list[str] = Field(default_factory=list)
+    tags: tuple[str, ...] = Field(default_factory=tuple)

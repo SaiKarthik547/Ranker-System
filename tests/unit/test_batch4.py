@@ -105,7 +105,7 @@ def test_schema_graph_instantiation() -> None:
     graph = SchemaGraph(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         fields=(field,),
         record_count=100,
         nesting_depth=2,
@@ -121,7 +121,7 @@ def test_schema_graph_validation() -> None:
         SchemaGraph(
             metadata=get_mock_metadata(),
             confidence=get_mock_confidence(),
-            evidence=[get_mock_evidence()],
+            evidence=(get_mock_evidence(),),
             fields=(),
             record_count=100,
             nesting_depth=2,
@@ -132,7 +132,7 @@ def test_schema_graph_validation() -> None:
         SchemaGraph(
             metadata=get_mock_metadata(),
             confidence=get_mock_confidence(),
-            evidence=[get_mock_evidence()],
+            evidence=(get_mock_evidence(),),
             fields=(get_mock_schema_field(),),
             record_count=-1,
             nesting_depth=2,
@@ -144,7 +144,7 @@ def test_schema_graph_immutability() -> None:
     graph = SchemaGraph(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         fields=(field,),
         record_count=100,
         nesting_depth=2,
@@ -162,7 +162,7 @@ def test_schema_graph_roundtrip() -> None:
     graph = SchemaGraph(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         fields=(field,),
         record_count=100,
         nesting_depth=2,

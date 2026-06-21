@@ -15,5 +15,5 @@ class Confidence(BaseContract):
     confidence_score: ConfidenceScore
     confidence_level: ConfidenceLevel
     confidence_method: str
-    confidence_factors: dict[str, float] = Field(default_factory=dict)
+    confidence_factors: tuple[tuple[str, float], ...] = Field(default_factory=tuple)
     confidence_explanation: str

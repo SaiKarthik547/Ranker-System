@@ -3,13 +3,12 @@ Schema contracts.
 """
 
 import uuid
-from typing import Any
 
 from pydantic import Field
 
 from src.contracts.base import BaseContract, IntelligenceArtifact
 from src.contracts.enums import FieldType
-from src.contracts.types import ArtifactId
+from src.contracts.types import ArtifactId, PrimitiveValue
 
 
 class SchemaField(BaseContract):
@@ -24,7 +23,7 @@ class SchemaField(BaseContract):
     cardinality: int | None = Field(default=None, ge=0)
     uniqueness: float | None = Field(default=None, ge=0.0, le=1.0)
     is_identifier: bool = False
-    sample_values: tuple[Any, ...] = Field(default_factory=tuple)
+    sample_values: tuple[PrimitiveValue, ...] = Field(default_factory=tuple)
 
 
 class SchemaGraph(IntelligenceArtifact):

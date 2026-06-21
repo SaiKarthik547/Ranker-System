@@ -2,7 +2,6 @@
 Tests for Milestone 1 Batch 5 (Profiling Contracts).
 """
 
-import json
 import uuid
 
 import pytest
@@ -128,7 +127,7 @@ def test_profile_report_instantiation() -> None:
     report = ProfileReport(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         field_metrics=(metric,),
     )
     assert len(report.field_metrics) == 1
@@ -141,7 +140,7 @@ def test_profile_report_validation() -> None:
         ProfileReport(
             metadata=get_mock_metadata(),
             confidence=get_mock_confidence(),
-            evidence=[get_mock_evidence()],
+            evidence=(get_mock_evidence(),),
             field_metrics=(),
         )
 
@@ -156,7 +155,7 @@ def test_profile_report_immutability() -> None:
     report = ProfileReport(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         field_metrics=(metric,),
     )
     with pytest.raises(ValidationError):
@@ -176,7 +175,7 @@ def test_profile_roundtrip() -> None:
     report = ProfileReport(
         metadata=get_mock_metadata(),
         confidence=get_mock_confidence(),
-        evidence=[get_mock_evidence()],
+        evidence=(get_mock_evidence(),),
         field_metrics=(metric,),
         summary="Test report",
     )

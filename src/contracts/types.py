@@ -15,4 +15,5 @@ ConfidenceSemVer = Annotated[str, Field(pattern=r"^\d+\.\d+\.\d+$")]
 ConfidenceScore = Annotated[float, Field(ge=0.0, le=1.0)]
 
 # Complex bounded types
+PrimitiveValue = str | int | float | bool | None
 ProfileMetricValue = float | int | str | tuple[tuple[str, float], ...]

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from src.contracts.confidence import Confidence
@@ -41,4 +41,4 @@ class IntelligenceArtifact(BaseArtifact):
     """
 
     confidence: Confidence
-    evidence: list[Evidence]
+    evidence: tuple[Evidence, ...] = Field(default_factory=tuple)
