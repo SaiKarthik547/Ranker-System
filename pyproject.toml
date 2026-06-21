@@ -1,0 +1,38 @@
+[project]
+name = "dataset-intelligence-engine"
+version = "0.1.0"
+description = "Universal Dataset Intelligence Platform"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "polars",
+    "duckdb",
+    "pydantic>=2.0.0",
+    "structlog",
+    "networkx",
+    "pyarrow"
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "mkdocs",
+    "mkdocs-material",
+    "pre-commit"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "C90", "I"]
+ignore = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+strict = true

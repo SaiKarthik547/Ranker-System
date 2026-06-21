@@ -1,0 +1,14 @@
+site_name: Dataset Intelligence Engine
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
