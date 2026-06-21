@@ -19,7 +19,7 @@ def get_line_count(node: ast.AST, source_lines: list[str]) -> int:
 
 
 def check_docs(docs_dir: Path) -> list[str]:
-    errors = []
+    errors: list[str] = []
     required_docs = [
         "01_ENGINEERING_CHARTER.md",
         "02_PHASE1_MASTER_SPEC.md",
@@ -40,7 +40,7 @@ def check_docs(docs_dir: Path) -> list[str]:
 
 
 def check_folders(src_dir: Path) -> list[str]:
-    errors = []
+    errors: list[str] = []
     if not src_dir.exists():
         return errors
     for d in src_dir.rglob("*"):
@@ -49,9 +49,15 @@ def check_folders(src_dir: Path) -> list[str]:
     return errors
 
 
+def handle_import(base: str, py_file: Path, errors: list[str], deps: list[str]) -> None:
+    if base in FORBIDDEN_DEPS:
+        errors.append(f"Forbidden dep '{base}' in {py_file}")
+    deps.append(base)
+
+
 def analyze_ast(tree: ast.AST, py_file: Path, lines: list[str]) -> tuple[list[str], list[str]]:
-    errors = []
-    file_deps = []
+    errors: list[str] = []
+    file_deps: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             lc = get_line_count(node, lines)
@@ -63,20 +69,14 @@ def analyze_ast(tree: ast.AST, py_file: Path, lines: list[str]) -> tuple[list[st
                 errors.append(f"Function '{node.name}' in {py_file} > {MAX_FUNC_LINES} lines")
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                base = alias.name.split(".")[0]
-                if base in FORBIDDEN_DEPS:
-                    errors.append(f"Forbidden dep '{base}' in {py_file}")
-                file_deps.append(base)
+                handle_import(alias.name.split(".")[0], py_file, errors, file_deps)
         elif isinstance(node, ast.ImportFrom) and node.module:
-            base = node.module.split(".")[0]
-            if base in FORBIDDEN_DEPS:
-                errors.append(f"Forbidden dep '{base}' in {py_file}")
-            file_deps.append(base)
+            handle_import(node.module.split(".")[0], py_file, errors, file_deps)
     return errors, file_deps
 
 
 def check_python_files(root: Path) -> tuple[list[str], dict[str, list[str]]]:
-    errors = []
+    errors: list[str] = []
     graph: dict[str, list[str]] = {}
     for py_file in root.rglob("*.py"):
         if any(p in py_file.parts for p in [".venv", ".tox", "node_modules"]):
@@ -99,6 +99,15 @@ def check_python_files(root: Path) -> tuple[list[str], dict[str, list[str]]]:
     return errors, graph
 
 
+def get_matching_files(dep: str, src_mods: set[str]) -> list[str]:
+    matches = []
+    for possible_file in src_mods:
+        p_mod = possible_file.replace(".py", "").replace("\\", "/").replace("/", ".")
+        if p_mod.startswith(dep):
+            matches.append(possible_file)
+    return matches
+
+
 def find_cycles(graph: dict[str, list[str]]) -> list[str]:
     src_mods = {k for k in graph if k.startswith("src")}
 
@@ -112,12 +121,10 @@ def find_cycles(graph: dict[str, list[str]]) -> list[str]:
         for dep in graph.get(node, []):
             if not dep.startswith("src."):
                 continue
-            for possible_file in src_mods:
-                p_mod = possible_file.replace(".py", "").replace("\\", "/").replace("/", ".")
-                if p_mod.startswith(dep):
-                    res = dfs(possible_file, path, visited)
-                    if res:
-                        return res
+            for possible_file in get_matching_files(dep, src_mods):
+                res = dfs(possible_file, path, visited)
+                if res:
+                    return res
         path.pop()
         return None
 
@@ -131,7 +138,7 @@ def find_cycles(graph: dict[str, list[str]]) -> list[str]:
 
 def main() -> None:
     root = Path(__file__).parent.parent
-    errors = []
+    errors: list[str] = []
     errors.extend(check_docs(root / "docs"))
     errors.extend(check_folders(root / "src"))
 
