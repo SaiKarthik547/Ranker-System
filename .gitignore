@@ -76,3 +76,8 @@ cover/
 .Trashes
 ehthumbs.db
 Thumbs.db
+*.jsonl
+artifacts/
+*_audit.py
+audit_script.py
+sample_data.csv
