@@ -29,6 +29,9 @@ class RankingPolicyEngine:
                 sorted_factors = sorted(score.factors, key=lambda f: -f.contribution)
                 top_2 = sorted_factors[:2]
                 
+                from src.contracts.ranking import FactorContribution
+                top_factors_struct = tuple(FactorContribution(factor=f.factor_name, contribution=f.contribution) for f in top_2)
+                
                 ranked_items.append(RankedCandidate(
                     rank=index,
                     candidate_id=score.candidate_id,
@@ -37,9 +40,8 @@ class RankingPolicyEngine:
                     alignment_id=score.alignment_id,
                     final_score=score.final_score,
                     factor_count=len(score.factors),
-                    evidence_count=0,
-                    top_factors=tuple(f.factor_name for f in top_2),
-                    factor_contributions=tuple(f.contribution for f in top_2)
+                    top_factors=top_factors_struct,
+                    evidence=score.evidence_objects
                 ))
             
         meta = ArtifactMetadata(

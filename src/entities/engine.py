@@ -37,11 +37,13 @@ class EntityExtractionEngine:
                     e_type = None
                     
                     if "skill" in path_lower and ("name" in path_lower or "skill" in path.split(".")[-1].lower()): e_type = "SKILL"
-                    elif "company" in path_lower or "employer" in path_lower: e_type = "COMPANY"
+                    elif "company" in path_lower or "employer" in path_lower: e_type = "EMPLOYER"
                     elif "cert" in path_lower and "name" in path_lower: e_type = "CERTIFICATION"
                     elif "lang" in path_lower and "language" in path_lower: e_type = "LANGUAGE"
-                    elif "institution" in path_lower or "degree" in path_lower or "field_of_study" in path_lower: e_type = "EDUCATION"
+                    elif "institution" in path_lower or "degree" in path_lower: e_type = "DEGREE"
                     elif "title" in path_lower or "role" in path_lower: e_type = "ROLE"
+                    elif "proficiency" in path_lower or "level" in path_lower: e_type = "LANGUAGE_PROFICIENCY"
+                    elif "size" in path_lower or "employees" in path_lower: e_type = "COMPANY_SIZE"
                     
                     if e_type and 0 < len(obj.strip()) < 100:
                         ent = Entity(

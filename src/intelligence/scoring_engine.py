@@ -7,9 +7,11 @@ from src.contracts.scoring import ScoringFactor, CandidateJobScore, ScoringCatal
 class ScoringIntelligenceEngine:
     def process(self, alignment_catalog: AlignmentCatalog, run_id: uuid.UUID) -> ScoringCatalog:
         scores = []
+        from src.contracts.ranking import EvidenceObject
         
         for alignment in alignment_catalog.alignments:
             factors: List[ScoringFactor] = []
+            evidences: List[EvidenceObject] = []
             
             # 1. Skill Match Factor
             req_skills = [s.signal_value for s in alignment.alignment_signals if s.signal_name == "REQUIRED_SKILL_MET"]
@@ -19,8 +21,6 @@ class ScoringIntelligenceEngine:
             pref_skill_evidences = [e for e in alignment.alignment_evidence if e.evidence_type == "SKILL_MATCH" and any(val in e.evidence_text for val in pref_skills)]
             
             skill_count = len(req_skill_evidences) + (len(pref_skill_evidences) * 0.5)
-            
-            # Normalize against an arbitrary small number for prototyping (e.g. 5 skills max)
             skill_norm = min(1.0, skill_count / 5.0)
             
             factors.append(ScoringFactor(
@@ -36,9 +36,22 @@ class ScoringIntelligenceEngine:
                 )
             ))
             
+            # Generate EvidenceObjects for skills
+            # Distribute the contribution among the matched skills
+            req_contrib = (skill_norm * (len(req_skill_evidences) / skill_count)) / max(1, len(req_skill_evidences)) if skill_count > 0 else 0
+            pref_contrib = (skill_norm * (len(pref_skill_evidences) * 0.5 / skill_count)) / max(1, len(pref_skill_evidences)) if skill_count > 0 else 0
+            
+            for e in req_skill_evidences:
+                evidences.append(EvidenceObject(evidence_type="REQUIRED_SKILL_MATCH", source_artifact=str(alignment.alignment_id), value=next((s for s in req_skills if s in e.evidence_text), e.evidence_text), contribution=req_contrib))
+            for e in pref_skill_evidences:
+                evidences.append(EvidenceObject(evidence_type="PREFERRED_SKILL_MATCH", source_artifact=str(alignment.alignment_id), value=next((s for s in pref_skills if s in e.evidence_text), e.evidence_text), contribution=pref_contrib))
+                
             # 2. Experience Factor
             exp_signals = [s for s in alignment.alignment_signals if s.signal_name == "EXPERIENCE_ALIGNMENT"]
             exp_val = 1.0 if len(exp_signals) > 0 else 0.0
+            
+            if exp_val > 0:
+                evidences.append(EvidenceObject(evidence_type="EXPERIENCE_MATCH", source_artifact=str(alignment.alignment_id), value="Met experience requirement", contribution=exp_val))
             
             factors.append(ScoringFactor(
                 factor_name="EXPERIENCE_FACTOR",
@@ -78,10 +91,17 @@ class ScoringIntelligenceEngine:
                 )
             ))
             
+            # Generate EvidenceObjects for rarity
+            if centrality_values:
+                evidences.append(EvidenceObject(evidence_type="RARITY_BONUS", source_artifact=str(alignment.alignment_id), value="Graph Centrality Topology", contribution=rarity))
+            
             # 4. Disqualifier Penalty
             disqualifiers = [e for e in alignment.alignment_evidence if "DISQUALIFIER" in e.evidence_type]
             disqualifier_penalty = -10.0 if len(disqualifiers) > 0 else 0.0
             if len(disqualifiers) > 0:
+                for dq in disqualifiers:
+                    evidences.append(EvidenceObject(evidence_type="DISQUALIFIER", source_artifact=str(alignment.alignment_id), value=dq.evidence_text, contribution=-10.0 / len(disqualifiers)))
+                
                 factors.append(ScoringFactor(
                     factor_name="DISQUALIFIER_PENALTY",
                     raw_strength=disqualifier_penalty,
@@ -96,6 +116,9 @@ class ScoringIntelligenceEngine:
             logistics = [e for e in alignment.alignment_evidence if e.evidence_type in ["LOCATION_REQUIREMENT_MET", "NOTICE_PERIOD_REQUIREMENT_MET"]]
             logistics_score = len(logistics) * 0.25
             if logistics_score > 0:
+                for lg in logistics:
+                    evidences.append(EvidenceObject(evidence_type="LOGISTICS_MATCH", source_artifact=str(alignment.alignment_id), value=lg.evidence_text, contribution=0.25))
+                    
                 factors.append(ScoringFactor(
                     factor_name="LOGISTICS_FACTOR",
                     raw_strength=logistics_score,
@@ -110,6 +133,9 @@ class ScoringIntelligenceEngine:
             role_align = [e for e in alignment.alignment_evidence if e.evidence_type in ["REQUIRES_SENIORITY_MET", "EMPLOYMENT_TYPE_MET"]]
             role_score = len(role_align) * 0.25
             if role_score > 0:
+                for ra in role_align:
+                    evidences.append(EvidenceObject(evidence_type="ROLE_ALIGNMENT", source_artifact=str(alignment.alignment_id), value=ra.evidence_text, contribution=0.25))
+                    
                 factors.append(ScoringFactor(
                     factor_name="ROLE_ALIGNMENT_FACTOR",
                     raw_strength=role_score,
@@ -128,6 +154,7 @@ class ScoringIntelligenceEngine:
                 candidate_id=alignment.candidate_id,
                 job_id=alignment.job_id,
                 factors=tuple(factors),
+                evidence_objects=tuple(evidences),
                 final_score=final_score,
                 metadata=ArtifactMetadata(
                     artifact_type=ArtifactType.CANDIDATE_JOB_SCORE,

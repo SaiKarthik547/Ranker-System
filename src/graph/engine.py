@@ -106,10 +106,15 @@ class KnowledgeGraphEngine:
                     confidence_method="co-occurrence",
                     confidence_explanation="Relationship Catalog"
                 )
+                try:
+                    e_type = EdgeType(rel.relationship_type)
+                except ValueError:
+                    e_type = EdgeType.RELATED_TO
+                
                 e = GraphEdge(
                     source_node_id=src_id,
                     target_node_id=tgt_id,
-                    edge_type=EdgeType.RELATED_TO,
+                    edge_type=e_type,
                     weight=rel.weight,
                     evidence=(ev,),
                     confidence=conf

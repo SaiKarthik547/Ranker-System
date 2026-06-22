@@ -31,12 +31,11 @@ def export_ranked_csv():
             # Synthesize reasoning string from top factors
             reasoning_parts = []
             top_factors = c.get("top_factors", [])
-            factor_contributions = c.get("factor_contributions", {})
-            
             if top_factors:
-                for factor in top_factors:
-                    if factor in factor_contributions:
-                        reasoning_parts.append(f"{factor}: {factor_contributions[factor]:.2f}")
+                for factor_obj in top_factors:
+                    factor_name = factor_obj.get("factor")
+                    contrib = factor_obj.get("contribution", 0.0)
+                    reasoning_parts.append(f"{factor_name}: {contrib:.2f}")
             reasoning = " | ".join(reasoning_parts) if reasoning_parts else "Score produced by core algorithms."
             
             row = {

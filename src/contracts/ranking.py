@@ -8,6 +8,16 @@ class RankingPolicy(BaseContract):
     sort_order: Literal["ASC", "DESC"] = "DESC"
     max_results: int = 100
 
+class EvidenceObject(BaseContract):
+    evidence_type: str
+    source_artifact: str
+    value: str
+    contribution: float
+
+class FactorContribution(BaseContract):
+    factor: str
+    contribution: float
+
 class RankedCandidate(BaseContract):
     rank: int
     candidate_id: str
@@ -16,9 +26,8 @@ class RankedCandidate(BaseContract):
     alignment_id: ArtifactId
     final_score: float
     factor_count: int
-    evidence_count: int
-    top_factors: tuple[str, ...]
-    factor_contributions: tuple[float, ...]
+    top_factors: tuple[FactorContribution, ...]
+    evidence: tuple[EvidenceObject, ...]
 
 class RankedCandidateCatalog(IntelligenceArtifact):
     catalog_id: ArtifactId = Field(default_factory=uuid.uuid4)
