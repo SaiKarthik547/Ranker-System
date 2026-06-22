@@ -153,9 +153,8 @@ We do not believe in hypotheticals. The following results are mathematically pro
 flowchart TB
     %% Styling
     classDef engine fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#fff,rx:5px,ry:5px
-    classDef contract fill:#0984e3,stroke:#fff,stroke-width:1px,color:#fff
     
-    subgraph Tier 1: Data Discovery & Normalization
+    subgraph Tier1 ["Tier 1: Data Discovery & Normalization"]
         direction LR
         IE[IngestionEngine]:::engine
         SDE[SchemaDiscoveryEngine]:::engine
@@ -164,7 +163,7 @@ flowchart TB
         IE --> SDE --> PE
     end
 
-    subgraph Tier 2: Semantic Intelligence Extraction
+    subgraph Tier2 ["Tier 2: Semantic Intelligence Extraction"]
         direction LR
         SE[SemanticEngine]:::engine
         EEE[EntityExtractionEngine]:::engine
@@ -176,7 +175,7 @@ flowchart TB
         PE --> SE --> EEE --> RDE --> PDE --> CE --> ADE
     end
 
-    subgraph Tier 3: Graph Assembly & Centrality
+    subgraph Tier3 ["Tier 3: Graph Assembly & Centrality"]
         direction LR
         CIE[CandidateIntelligenceEngine]:::engine
         KGE[KnowledgeGraphEngine]:::engine
@@ -187,7 +186,7 @@ flowchart TB
         GCE --> JIE
     end
 
-    subgraph Tier 4: Alignment, Scoring & Final Ranking
+    subgraph Tier4 ["Tier 4: Alignment, Scoring & Final Ranking"]
         direction LR
         AIE[AlignmentIntelligenceEngine]:::engine
         SIE[ScoringIntelligenceEngine]:::engine
@@ -282,27 +281,26 @@ flowchart TD
 <summary><b>📊 View Diagram: 17-Phase Execution Orchestration (pipeline.py)</b></summary>
 
 ```mermaid
-flowchart LR
+flowchart TD
     %% Styling
-    classDef phase fill:#6c5ce7,stroke:#fff,stroke-width:1px,color:#fff
+    classDef phase fill:#6c5ce7,stroke:#fff,stroke-width:1px,color:#fff,rx:10px,ry:10px
 
-    P1[Phase 1]:::phase --> P2[Phase 2]:::phase
-    P2 --> P3[Phase 3]:::phase
-    P3 --> P4[Phase 4]:::phase
-    P4 --> P5[Phase 5]:::phase
-    P5 --> P6[Phase 6]:::phase
-    P6 --> P7[Phase 7]:::phase
-    P7 --> P8[Phase 8]:::phase
-    P8 --> P9[Phase 9]:::phase
-    P9 --> P10[Phase 10]:::phase
+    subgraph Block1 ["Phase 1-3: Ingestion & Discovery"]
+        P1[1. Ingestion]:::phase --> P2[2. Schema Discovery]:::phase --> P3[3. Profiling]:::phase
+    end
     
-    P10 --> P11[Phase 11]:::phase
-    P11 --> P12[Phase 12]:::phase
-    P12 --> P13[Phase 13]:::phase
-    P13 --> P14[Phase 14]:::phase
-    P14 --> P15[Phase 15]:::phase
-    P15 --> P16[Phase 16]:::phase
-    P16 --> P17[Phase 17]:::phase
+    subgraph Block2 ["Phase 4-10: Deep Extraction"]
+        P3 --> P4[4. Semantic]:::phase --> P5[5. Entity]:::phase --> P6[6. Relationships]:::phase
+        P6 --> P7[7. Patterns]:::phase --> P8[8. Clustering]:::phase --> P9[9. Anomalies]:::phase --> P10[10. Reports]:::phase
+    end
+    
+    subgraph Block3 ["Phase 11-13: Graph Generation"]
+        P10 --> P11[11. Candidate Intel]:::phase --> P12[12. Knowledge Graph]:::phase --> P13[13. Centrality]:::phase
+    end
+    
+    subgraph Block4 ["Phase 14-17: Scoring & Ranking"]
+        P13 --> P14[14. Job Intel]:::phase --> P15[15. Alignment]:::phase --> P16[16. Scoring]:::phase --> P17[17. Ranking Output]:::phase
+    end
 ```
 </details>
 
