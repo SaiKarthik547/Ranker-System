@@ -10,7 +10,8 @@ dependencies = [
     "pydantic>=2.0.0",
     "structlog",
     "networkx",
-    "pyarrow"
+    "pyarrow",
+    "python-docx"
 ]
 
 [dependency-groups]
