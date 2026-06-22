@@ -106,7 +106,7 @@ uv sync
 
 **2. Run the Full 17-Phase Pipeline**
 ```bash
-uv run python main.py candidates.jsonl job_description.docx
+uv run python main.py candidates.jsonl data/job_description.docx
 ```
 *(Watch the orchestration pipeline dynamically light up all 17 engines and dump the 21 intermediate `.json` artifacts live into the `artifacts/` folder.)*
 
@@ -117,7 +117,7 @@ uv run python scripts/export_csv.py
 
 **4. Validate Output Compliance**
 ```bash
-uv run python validate_submission.py artifacts/top_100_recommended_candidates.csv
+uv run python scripts/validate_submission.py artifacts/top_100_recommended_candidates.csv
 ```
 
 ---
