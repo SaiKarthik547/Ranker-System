@@ -46,7 +46,7 @@ We built the **Dataset Intelligence Engine (DIE)** to solve this through determi
 *   **Strict Pydantic Data Contracts:** Data mutability is the enemy of reliability. By forcing data to travel through explicit, immutable Pydantic contracts (`SchemaGraph`, `SemanticCatalog`, `EntityCatalog`), we guarantee that corrupt or unexpected data structures are caught at phase boundaries before they poison the ranking.
 *   **Knowledge Graph Assembly:** Instead of matching flat strings, we build a multi-dimensional graph. Entities (skills, degrees, companies) are linked via structural relationships. This allows the system to discover "hidden" high-value candidates through graph traversal.
 *   **Graph Centrality (PageRank for Skills):** Keyword matching treats all skills equally. Our `GraphCentralityEngine` analyzes the topology of the Knowledge Graph to compute the relative rarity and structural importance of specific entities (`EntityCentralityCatalog`). This means the system mathematically values a candidate with a rare, highly connected tech stack exponentially higher than a candidate with generic keywords.
-*   **100% Deterministic Evidence:** Every single fractional point added to a candidate's score is bound to an explicit `EvidenceObject` and `FactorContribution` contract. We can trace a #1 ranking directly back to the specific line in the parsed ingestion payload.
+*   **100% Deterministic Evidence:** Every single fractional point added to a candidate's score is mathematically bound to explicit `EvidenceObject` and `ScoringFactor` contracts (manually verified in scoring schema). We can trace a #1 ranking directly back to the specific line in the parsed ingestion payload.
 
 ---
 
@@ -62,10 +62,10 @@ Our orchestration engine (`pipeline.py`) routes raw data through 17 highly speci
 | **4** | `SemanticEngine` | Performs value-level inference to extract high-level domains (e.g. mapping strings to "Cloud Computing"). | `SemanticCatalog` ➔ `semantic_catalog.json` |
 | **5** | `EntityExtractionEngine` | Parses structural fields to isolate named, discrete entities based on semantic boundaries. | `EntityCatalog` ➔ `entity_catalog.json` |
 | **6** | `RelationshipDiscoveryEngine`| Cross-references entities to map topological dependencies. | `RelationshipCatalog` ➔ `relationship_catalog.json` |
-| **7** | `PatternDiscoveryEngine` | Identifies recurring structural or temporal data patterns across the dataset. | `PatternCatalog` ➔ `pattern_catalog.json` |
-| **8** | `ClusteringEngine` | Employs statistical grouping to bind similar entities into logical cohorts. | `ClusterCatalog` ➔ `cluster_catalog.json` |
-| **9** | `AnomalyDetectionEngine` | Flags statistical outliers using bounded confidence intervals. | `AnomalyCatalog` ➔ `anomaly_catalog.json` |
-| **10**| `ReportEngine` | Aggregates all discovery phases into a mid-pipeline intelligence summary. | `IntelligenceReport` ➔ `intelligence_report.json` |
+| **7** | `PatternDiscoveryEngine` | Current implementation performs heuristic pattern discovery. | `PatternCatalog` ➔ `pattern_catalog.json` |
+| **8** | `ClusteringEngine` | Current implementation performs heuristic clustering. | `ClusterCatalog` ➔ `cluster_catalog.json` |
+| **9** | `AnomalyDetectionEngine` | Current implementation performs heuristic anomaly detection. | `AnomalyCatalog` ➔ `anomaly_catalog.json` |
+| **10**| `ReportEngine` | Aggregates discovery phases into a mid-pipeline intelligence summary. | `IntelligenceReport` ➔ `intelligence_report.json` |
 | **11**| `CandidateIntelligenceEngine`| Assembles the discovery catalogs into multi-dimensional Candidate profiles. | `CandidateIntelligenceCatalog` ➔ `candidate_intelligence_catalog.json` |
 | **12**| `KnowledgeGraphEngine` | **Assembles the master relationship graph from all extracted entities and relationships.** | `KnowledgeGraph` ➔ `knowledge_graph.json` |
 | **13**| `GraphCentralityEngine` | **Calculates network centrality metrics to determine the structural weight of specific entities.** | `EntityCentralityCatalog` ➔ `graph_centrality.json` |
@@ -127,7 +127,11 @@ uv run python scripts/validate_submission.py artifacts/top_100_recommended_candi
 We do not believe in hypotheticals. The following results are mathematically proven directly from the pipeline execution evidence:
 
 > [!SUCCESS] **Testing & Stability**
-> **37 / 37 Unit Tests Passed.** Complete coverage over core business logic and Pydantic instantiation rules.
+> **37 / 37 Unit Tests Passed.** 
+> The testing suite rigorously validates the pipeline at both the contract and logic levels:
+> - **Batch 1-5 Contract Validation (`test_batch1.py` to `test_batch5.py`):** Ensures all 17 Pydantic schemas enforce strict data typing, immutability (`MappingProxyType`), and required fields (e.g. `ArtifactMetadata`, `ConfidenceLevel`).
+> - **Business Logic Verification (`test_business_logic.py`):** Validates the mathematical and extraction logic, including Graph Centrality algorithms, semantic inference boundaries, and Alignment Scoring mathematics.
+> - **Failure Mode Testing:** Validates that corrupted JSON payloads are successfully caught and rejected by the `DatasetRecord` constraints.
 
 > [!SUCCESS] **Execution Completeness**
 > The orchestration pipeline successfully executed all 17 engines in sequence, generating all 21 `.json` intermediate artifacts successfully.
@@ -139,6 +143,31 @@ We do not believe in hypotheticals. The following results are mathematically pro
 > - Successfully generated and validated the final `top_100_recommended_candidates.csv` output.
 
 *(Note: Specific benchmark metrics for precision/recall are not established by audit at this phase.)*
+
+---
+
+## 📦 Hackathon Deliverables
+
+### Submission CSV
+`artifacts/top_100_recommended_candidates.csv`
+
+### Validator Status
+Submission is valid.
+
+### Repository
+https://github.com/SaiKarthik547/Ranker-System
+
+### Generated Artifacts
+- `ranked_candidate_catalog.json`
+- `candidate_job_scoring_catalog.json`
+- `candidate_job_alignment_catalog.json`
+- `graph_centrality.json`
+- `knowledge_graph.json`
+- `semantic_catalog.json`
+- `entity_catalog.json`
+- `relationship_catalog.json`
+- `schema_graph.json`
+- `dataset_records.json`
 
 ---
 
@@ -183,7 +212,6 @@ flowchart TB
         JIE[JobIntelligenceEngine]:::engine
         
         ADE --> CIE --> KGE --> GCE
-        GCE --> JIE
     end
 
     subgraph Tier4 ["Tier 4: Alignment, Scoring & Final Ranking"]
@@ -193,6 +221,7 @@ flowchart TB
         RPE[RankingPolicyEngine]:::engine
         
         JIE --> AIE
+        GCE --> AIE
         CIE -.-> AIE
         AIE --> SIE --> RPE
     end
@@ -263,7 +292,7 @@ flowchart TD
     RC --> Eng12
     Eng12 --> Eng13 --> ECC
     
-    EC --> Eng14 --> JIC
+    Eng14 --> JIC
     
     CIC --> Eng15
     JIC --> Eng15
