@@ -149,7 +149,7 @@ We do not believe in hypotheticals. The following results are mathematically pro
 ## 📦 Hackathon Deliverables
 
 ### Submission CSV
-`artifacts/top_100_recommended_candidates.csv`
+`Result/top_100_recommended_candidates.csv`
 
 ### Validator Status
 Submission is valid.
