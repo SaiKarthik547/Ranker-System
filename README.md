@@ -1,7 +1,8 @@
 <div align="center">
   
-# 🧠 Dataset Intelligence Engine (DIE)
-**The Universal Dataset Intelligence & Ranking Platform**
+# 🧠 AI-Powered Candidate Ranking & Dataset Intelligence System
+
+**An end-to-end intelligence pipeline that transforms raw candidate datasets into explainable, evidence-driven rankings through schema discovery, semantic analysis, knowledge graph construction, candidate-job alignment, scoring intelligence, and policy-based ranking.**
 
 ![Python Version](https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python)
 ![Tests](https://img.shields.io/badge/Tests-37%20Passing-success?style=for-the-badge)
