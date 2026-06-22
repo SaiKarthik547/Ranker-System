@@ -14,7 +14,7 @@
 
 <br>
 
-## 🍼 Explain Like I'm 5 (ELI5)
+##  Explaination in Simple Terms:
 
 Imagine you are handed a massive box of random Lego pieces (unstructured data) and asked to find the exact pieces needed to build a specific, complex spaceship (a job description). 
 
