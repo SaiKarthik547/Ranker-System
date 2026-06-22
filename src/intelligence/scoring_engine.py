@@ -12,8 +12,13 @@ class ScoringIntelligenceEngine:
             factors: List[ScoringFactor] = []
             
             # 1. Skill Match Factor
-            skill_evidences = [e for e in alignment.alignment_evidence if e.evidence_type == "SKILL_MATCH"]
-            skill_count = len(skill_evidences)
+            req_skills = [s.signal_value for s in alignment.alignment_signals if s.signal_name == "REQUIRED_SKILL_MET"]
+            pref_skills = [s.signal_value for s in alignment.alignment_signals if s.signal_name == "PREFERRED_SKILL_MET"]
+            
+            req_skill_evidences = [e for e in alignment.alignment_evidence if e.evidence_type == "SKILL_MATCH" and any(val in e.evidence_text for val in req_skills)]
+            pref_skill_evidences = [e for e in alignment.alignment_evidence if e.evidence_type == "SKILL_MATCH" and any(val in e.evidence_text for val in pref_skills)]
+            
+            skill_count = len(req_skill_evidences) + (len(pref_skill_evidences) * 0.5)
             
             # Normalize against an arbitrary small number for prototyping (e.g. 5 skills max)
             skill_norm = min(1.0, skill_count / 5.0)
@@ -50,7 +55,7 @@ class ScoringIntelligenceEngine:
             
             # 3. Centrality Rarity Factor
             centrality_values = [
-                e.entity_centrality for e in skill_evidences 
+                e.entity_centrality for e in req_skill_evidences + pref_skill_evidences 
                 if e.entity_centrality is not None
             ]
             
@@ -73,8 +78,50 @@ class ScoringIntelligenceEngine:
                 )
             ))
             
-            # Calculate final score deterministically via average (sum(contributions) / len(factors))
-            final_score = sum(f.contribution for f in factors) / len(factors)
+            # 4. Disqualifier Penalty
+            disqualifiers = [e for e in alignment.alignment_evidence if "DISQUALIFIER" in e.evidence_type]
+            disqualifier_penalty = -10.0 if len(disqualifiers) > 0 else 0.0
+            if len(disqualifiers) > 0:
+                factors.append(ScoringFactor(
+                    factor_name="DISQUALIFIER_PENALTY",
+                    raw_strength=disqualifier_penalty,
+                    normalized_strength=disqualifier_penalty,
+                    contribution=disqualifier_penalty,
+                    confidence=Confidence(
+                        confidence_score=1.0, confidence_level=ConfidenceLevel.HIGH, confidence_method="deterministic", confidence_explanation="Candidate hit a hard disqualifier."
+                    )
+                ))
+                
+            # 5. Logistics Factor (Location & Notice Period)
+            logistics = [e for e in alignment.alignment_evidence if e.evidence_type in ["LOCATION_REQUIREMENT_MET", "NOTICE_PERIOD_REQUIREMENT_MET"]]
+            logistics_score = len(logistics) * 0.25
+            if logistics_score > 0:
+                factors.append(ScoringFactor(
+                    factor_name="LOGISTICS_FACTOR",
+                    raw_strength=logistics_score,
+                    normalized_strength=logistics_score,
+                    contribution=logistics_score,
+                    confidence=Confidence(
+                        confidence_score=1.0, confidence_level=ConfidenceLevel.HIGH, confidence_method="deterministic", confidence_explanation="Logistics matched"
+                    )
+                ))
+                
+            # 6. Role Alignment Factor
+            role_align = [e for e in alignment.alignment_evidence if e.evidence_type in ["REQUIRES_SENIORITY_MET", "EMPLOYMENT_TYPE_MET"]]
+            role_score = len(role_align) * 0.25
+            if role_score > 0:
+                factors.append(ScoringFactor(
+                    factor_name="ROLE_ALIGNMENT_FACTOR",
+                    raw_strength=role_score,
+                    normalized_strength=role_score,
+                    contribution=role_score,
+                    confidence=Confidence(
+                        confidence_score=1.0, confidence_level=ConfidenceLevel.HIGH, confidence_method="deterministic", confidence_explanation="Role requirements matched"
+                    )
+                ))
+            
+            # Calculate final score deterministically via sum instead of average, to allow penalties to drop it below 0
+            final_score = sum(f.contribution for f in factors)
             
             scores.append(CandidateJobScore(
                 alignment_id=alignment.alignment_id,

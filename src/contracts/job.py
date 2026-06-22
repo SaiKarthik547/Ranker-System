@@ -16,6 +16,7 @@ class JobRequirement(BaseContract):
     requirement_type: str  # e.g. REQUIRES_SKILL, PREFERS_SKILL, REQUIRES_EXPERIENCE
     target_value: str
     severity: str = "MUST_HAVE"
+    source_text: str = ""
 
 class JobSignal(BaseContract):
     signal_id: ArtifactId = Field(default_factory=uuid.uuid4)

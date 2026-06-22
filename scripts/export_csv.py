@@ -23,26 +23,27 @@ def export_ranked_csv():
     # Write to CSV
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         # Define columns we want in the CSV
-        fieldnames = [
-            "rank", 
-            "candidate_id", 
-            "job_id", 
-            "final_score", 
-            "top_factors", 
-            "factor_contributions"
-        ]
+        fieldnames = ["candidate_id", "rank", "score", "reasoning"]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         
         writer.writeheader()
         for c in candidates:
+            # Synthesize reasoning string from top factors
+            reasoning_parts = []
+            top_factors = c.get("top_factors", [])
+            factor_contributions = c.get("factor_contributions", {})
+            
+            if top_factors:
+                for factor in top_factors:
+                    if factor in factor_contributions:
+                        reasoning_parts.append(f"{factor}: {factor_contributions[factor]:.2f}")
+            reasoning = " | ".join(reasoning_parts) if reasoning_parts else "Score produced by core algorithms."
+            
             row = {
-                "rank": c.get("rank"),
                 "candidate_id": c.get("candidate_id"),
-                "job_id": c.get("job_id"),
-                "final_score": f"{c.get('final_score', 0):.4f}",
-                # Join the tuples into comma-separated strings for CSV readability
-                "top_factors": " | ".join(c.get("top_factors", [])),
-                "factor_contributions": " | ".join([f"{val:.3f}" for val in c.get("factor_contributions", [])])
+                "rank": c.get("rank"),
+                "score": f"{c.get('final_score', 0):.4f}",
+                "reasoning": reasoning
             }
             writer.writerow(row)
             

@@ -9,6 +9,10 @@ class EntityExtractionEngine:
     def process(self, records: list[DatasetRecord], schema: SchemaGraph, semantic: SemanticCatalog, run_id: uuid.UUID) -> EntityCatalog:
         entities = []
         
+        # Load skill dictionary from Candidates for intersection (if available from semantic catalog or graph)
+        # But we don't have direct access to Candidate Entity Catalog here. We must extract entities organically.
+        import re
+        
         # Discover identifier field
         id_field = "id"
         for f in schema.fields:
@@ -47,6 +51,52 @@ class EntityExtractionEngine:
                             source_field_path=path
                         )
                         entities.append(ent)
+                
+                # JD Unstructured Text Extraction
+                if path.endswith("document_text") and isinstance(obj, str):
+                    # 1. Location Entities
+                    location_matches = re.finditer(r'(?:Location|Work Location|Office)[:\s]+([^,\n]+)', obj, re.IGNORECASE)
+                    for m in location_matches:
+                        loc = m.group(1).strip()
+                        if 0 < len(loc) < 50:
+                            entities.append(Entity(entity_name=loc, entity_type="LOCATION", source_record_id=record_id, source_field_path="document_text.location"))
+                    
+                    for loc in ["Remote", "Hybrid", "Onsite", "Pune", "Noida", "Bangalore", "Hyderabad", "Chennai", "Delhi", "Mumbai"]:
+                        if re.search(r'\b' + loc + r'\b', obj, re.IGNORECASE):
+                            entities.append(Entity(entity_name=loc, entity_type="LOCATION", source_record_id=record_id, source_field_path="document_text.location"))
+                            
+                    # 2. Employment Type
+                    for emp in ["Contract", "Full-time", "Internship", "Part-time"]:
+                        if re.search(r'\b' + emp + r'\b', obj, re.IGNORECASE):
+                            entities.append(Entity(entity_name=emp, entity_type="ROLE", source_record_id=record_id, source_field_path="document_text.employment_type"))
+                            
+                    # 3. Seniority
+                    for sen in ["Junior", "Mid", "Senior", "Lead", "Principal", "Architect"]:
+                        if re.search(r'\b' + sen + r'\b', obj, re.IGNORECASE):
+                            entities.append(Entity(entity_name=sen, entity_type="ROLE", source_record_id=record_id, source_field_path="document_text.seniority"))
+                            
+                    # 4. Notice Period
+                    for np in ["Immediate joiner", "15 days", "30 days", "60 days", "90 days"]:
+                        if re.search(r'\b' + np.replace(" ", r'\s+') + r'\b', obj, re.IGNORECASE):
+                            entities.append(Entity(entity_name=np, entity_type="ROLE", source_record_id=record_id, source_field_path="document_text.notice_period"))
+                            
+                    # 5. Common Tech Skills (Deterministic Rules)
+                    # We will organically extract known tech keywords.
+                    tech_keywords = ["Python", "Java", "C++", "AWS", "GCP", "Azure", "React", "Node", "SQL", "NoSQL", 
+                                     "Pinecone", "Weaviate", "Milvus", "FAISS", "Qdrant", "Elasticsearch", "OpenSearch",
+                                     "LangChain", "OpenAI", "LLM", "RAG", "BGE", "E5", "Sentence-Transformers", 
+                                     "NDCG", "MRR", "MAP", "A/B test", "LoRA", "QLoRA", "PEFT", "XGBoost"]
+                    for tech in tech_keywords:
+                        if re.search(r'\b' + re.escape(tech) + r'\b', obj, re.IGNORECASE):
+                            entities.append(Entity(entity_name=tech, entity_type="SKILL", source_record_id=record_id, source_field_path="document_text.skill"))
+                            
+                    # 6. Disqualifier Companies (Explicitly from text)
+                    if re.search(r'consulting firms\s*\((.*?)\)', obj, re.IGNORECASE):
+                        match = re.search(r'consulting firms\s*\((.*?)\)', obj, re.IGNORECASE)
+                        comps = [c.strip() for c in match.group(1).split(',')]
+                        for c in comps:
+                            if c.lower() != 'etc.':
+                                entities.append(Entity(entity_name=c, entity_type="COMPANY", source_record_id=record_id, source_field_path="document_text.disqualifier_company"))
             
             extract_lists(payload)
             

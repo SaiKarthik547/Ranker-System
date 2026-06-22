@@ -22,9 +22,12 @@ from src.intelligence.ranking_engine import RankingPolicyEngine
 from src.contracts.job import JobDescription
 from src.contracts.ranking import RankingPolicy
 
+from src.ingestion.docx_parser import DocxParser
+
 class PipelineOrchestrator:
     def __init__(self) -> None:
         self.ingestion = IngestionEngine()
+        self.docx_parser = DocxParser()
         self.schema = SchemaDiscoveryEngine()
         self.profiling = ProfilingEngine()
         self.semantic = SemanticEngine()
@@ -42,7 +45,7 @@ class PipelineOrchestrator:
         self.scoring = ScoringIntelligenceEngine()
         self.ranking = RankingPolicyEngine()
         
-    def run(self, input_file: str) -> None:
+    def run(self, input_file: str, jd_file: str) -> None:
         run_id = uuid.uuid4()
         out_dir = Path("artifacts")
         out_dir.mkdir(exist_ok=True)
@@ -64,32 +67,32 @@ class PipelineOrchestrator:
             
         print("4. Semantic Analysis...")
         semantic_catalog = self.semantic.process(records, schema_graph, run_id)
-        with open(out_dir / "semantic_catalog.json", "w") as f:
+        with open(out_dir / "semantic_catalog.json", "w", encoding="utf-8") as f:
             f.write(semantic_catalog.model_dump_json(indent=2))
             
         print("5. Entity Extraction...")
         entity_catalog = self.entity.process(records, schema_graph, semantic_catalog, run_id)
-        with open(out_dir / "entity_catalog.json", "w") as f:
+        with open(out_dir / "entity_catalog.json", "w", encoding="utf-8") as f:
             f.write(entity_catalog.model_dump_json(indent=2))
             
         print("6. Relationship Discovery...")
         relationship_catalog = self.relationship.process(records, entity_catalog, run_id)
-        with open(out_dir / "relationship_catalog.json", "w") as f:
+        with open(out_dir / "relationship_catalog.json", "w", encoding="utf-8") as f:
             f.write(relationship_catalog.model_dump_json(indent=2))
             
         print("7. Pattern Discovery...")
         pattern_catalog = self.pattern.process(records, run_id)
-        with open(out_dir / "pattern_catalog.json", "w") as f:
+        with open(out_dir / "pattern_catalog.json", "w", encoding="utf-8") as f:
             f.write(pattern_catalog.model_dump_json(indent=2))
             
         print("8. Clustering...")
         cluster_catalog = self.cluster.process(records, run_id)
-        with open(out_dir / "cluster_catalog.json", "w") as f:
+        with open(out_dir / "cluster_catalog.json", "w", encoding="utf-8") as f:
             f.write(cluster_catalog.model_dump_json(indent=2))
             
         print("9. Anomaly Detection...")
         anomaly_catalog = self.anomaly.process(records, run_id)
-        with open(out_dir / "anomaly_catalog.json", "w") as f:
+        with open(out_dir / "anomaly_catalog.json", "w", encoding="utf-8") as f:
             f.write(anomaly_catalog.model_dump_json(indent=2))
             
         print("10. Report Generation...")
@@ -147,19 +150,16 @@ class PipelineOrchestrator:
         print("--- PHASE 4 ---")
         print("14. Job Intelligence Engine...")
         
-        # Load sample jobs
-        import os
-        job_file = Path("data/sample_job_descriptions.json")
-        jobs = []
-        if job_file.exists():
-            with open(job_file, "r") as f:
-                jobs_data = json.load(f)
-                jobs = [JobDescription(**j) for j in jobs_data]
-        else:
-            print(f"Warning: {job_file} not found. Running Phase 4 with empty jobs list.")
+        # Parse DOCX into DatasetRecord
+        jd_record = self.docx_parser.process(jd_file, run_id)
+        
+        # Symmetrical Entity Extraction for JD
+        jd_entity_catalog = self.entity.process([jd_record], schema_graph, semantic_catalog, run_id)
+        with open(out_dir / "job_entity_catalog.json", "w", encoding="utf-8") as f:
+            f.write(jd_entity_catalog.model_dump_json(indent=2))
             
-        job_catalog = self.job.process(jobs, knowledge_graph, run_id)
-        with open(out_dir / "job_intelligence_catalog.json", "w") as f:
+        job_catalog = self.job.process(jd_record, jd_entity_catalog, run_id)
+        with open(out_dir / "job_intelligence_catalog.json", "w", encoding="utf-8") as f:
             f.write(job_catalog.model_dump_json(indent=2))
             
         print("--- PHASE 5 ---")
@@ -171,7 +171,7 @@ class PipelineOrchestrator:
             centrality_catalog=centrality_catalog,
             run_id=run_id
         )
-        with open(out_dir / "candidate_job_alignment_catalog.json", "w") as f:
+        with open(out_dir / "candidate_job_alignment_catalog.json", "w", encoding="utf-8") as f:
             f.write(alignment_catalog.model_dump_json(indent=2))
             
         print("--- PHASE 6 ---")
@@ -180,7 +180,7 @@ class PipelineOrchestrator:
             alignment_catalog=alignment_catalog,
             run_id=run_id
         )
-        with open(out_dir / "candidate_job_scoring_catalog.json", "w") as f:
+        with open(out_dir / "candidate_job_scoring_catalog.json", "w", encoding="utf-8") as f:
             f.write(scoring_catalog.model_dump_json(indent=2))
             
         print("--- PHASE 7 ---")
@@ -191,7 +191,7 @@ class PipelineOrchestrator:
             policy=ranking_policy,
             run_id=run_id
         )
-        with open(out_dir / "ranked_candidate_catalog.json", "w") as f:
+        with open(out_dir / "ranked_candidate_catalog.json", "w", encoding="utf-8") as f:
             f.write(ranked_catalog.model_dump_json(indent=2))
             
         print("Done!")

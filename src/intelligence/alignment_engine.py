@@ -68,9 +68,10 @@ class AlignmentIntelligenceEngine:
                 for req in job_catalog.requirements:
                     req_val = req.target_value.lower()
                     
-                    if req.requirement_type == "REQUIRES_SKILL":
+                    if req.requirement_type in ["REQUIRES_SKILL", "PREFERS_SKILL"]:
                         if req_val in c_ents:
                             cent_val = centrality_map.get(req_val)
+                            sig_name = "REQUIRED_SKILL_MET" if req.requirement_type == "REQUIRES_SKILL" else "PREFERRED_SKILL_MET"
                             evidences.append(AlignmentEvidence(
                                 candidate_id=cid,
                                 job_id=jid,
@@ -81,12 +82,11 @@ class AlignmentIntelligenceEngine:
                             signals.append(AlignmentSignal(
                                 candidate_id=cid,
                                 job_id=jid,
-                                signal_name="REQUIRED_SKILL_MATCH",
+                                signal_name=sig_name,
                                 signal_value=req.target_value
                             ))
                             
                     elif req.requirement_type == "REQUIRES_EXPERIENCE":
-                        # We can pull from CandidateProfile.roles length as a proxy for experience
                         if len(candidate.roles) >= float(req.target_value):
                             evidences.append(AlignmentEvidence(
                                 candidate_id=cid,
@@ -99,6 +99,53 @@ class AlignmentIntelligenceEngine:
                                 job_id=jid,
                                 signal_name="EXPERIENCE_ALIGNMENT",
                                 signal_value="PRESENT"
+                            ))
+                            
+                    elif req.requirement_type == "DISQUALIFIER_COMPANY":
+                        if req_val in c_ents:
+                            evidences.append(AlignmentEvidence(
+                                candidate_id=cid,
+                                job_id=jid,
+                                evidence_type="DISQUALIFIER_COMPANY_MATCH",
+                                evidence_text=f"Candidate has history with disqualifier company '{req.target_value}'."
+                            ))
+                            signals.append(AlignmentSignal(
+                                candidate_id=cid,
+                                job_id=jid,
+                                signal_name="DISQUALIFIER_COMPANY_MATCH",
+                                signal_value=req.target_value
+                            ))
+                            
+                    elif req.requirement_type == "LOCATION_REQUIREMENT":
+                        # Also check if any candidate location entities intersect
+                        if req_val in c_ents:
+                            evidences.append(AlignmentEvidence(
+                                candidate_id=cid,
+                                job_id=jid,
+                                evidence_type="LOCATION_REQUIREMENT_MET",
+                                evidence_text=f"Candidate location aligns with '{req.target_value}'."
+                            ))
+                            signals.append(AlignmentSignal(
+                                candidate_id=cid,
+                                job_id=jid,
+                                signal_name="LOCATION_REQUIREMENT_MET",
+                                signal_value=req.target_value
+                            ))
+                            
+                    elif req.requirement_type in ["REQUIRES_SENIORITY", "NOTICE_PERIOD_REQUIREMENT", "EMPLOYMENT_TYPE"]:
+                        if req_val in c_ents:
+                            sig_name = req.requirement_type + "_MET"
+                            evidences.append(AlignmentEvidence(
+                                candidate_id=cid,
+                                job_id=jid,
+                                evidence_type=sig_name,
+                                evidence_text=f"Candidate matches {req.requirement_type} '{req.target_value}'."
+                            ))
+                            signals.append(AlignmentSignal(
+                                candidate_id=cid,
+                                job_id=jid,
+                                signal_name=sig_name,
+                                signal_value=req.target_value
                             ))
 
                 alignments.append(CandidateJobAlignment(
